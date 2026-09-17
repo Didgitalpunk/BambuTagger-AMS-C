@@ -270,12 +270,37 @@ bool TagParser::parseRawNTAG(uint8_t* data, uint16_t length, const char* uid, Sp
           int ps = pos + typeLen;
           if (payloadLen >= 0x66 && ps + payloadLen <= length) {
             const uint8_t* p = &data[ps];
+            uint16_t version = ((uint16_t)p[0x00] << 8) | p[0x01];
+            uint8_t majorVersion = version / 1000;
+            snprintf(info.detailedType, sizeof(info.detailedType), "OpenTag3D v%u.%03u",
+                     majorVersion, version % 1000);
+
+            if (majorVersion < 1 || majorVersion > 2) {
+              continue;
+            }
+
             char baseMat[6] = {0}; memcpy(baseMat, p + 0x02, 5);
             char mods[6] = {0};   memcpy(mods,   p + 0x07, 5);
-            char brand[17] = {0}; memcpy(brand,  p + 0x1B, 16);
-            uint8_t r = p[0x4B], g = p[0x4C], b = p[0x4D];
-            uint16_t wg = ((uint16_t)p[0x5E] << 8) | p[0x5F];
-            uint16_t pt = (uint16_t)p[0x60] * 5;
+            char brand[17] = {0};
+            uint8_t r, g, b;
+            uint16_t wg, pt;
+
+            if (majorVersion == 1) {
+              memcpy(brand,  p + 0x1B, 16);
+              r = p[0x4B];
+              g = p[0x4C];
+              b = p[0x4D];
+              wg = ((uint16_t)p[0x5E] << 8) | p[0x5F];
+              pt = (uint16_t)p[0x60] * 5;
+            } else {
+              memcpy(brand,  p + 0x0C, 16);
+              r = p[0x3C];
+              g = p[0x3D];
+              b = p[0x3E];
+              wg = ((uint16_t)p[0x9E] << 8) | p[0x9F];
+              pt = (uint16_t)p[0x90] * 5;
+            }
+
             for (int j = 4; j >= 0; j--) { if (baseMat[j] == ' ' || baseMat[j] == 0) baseMat[j] = 0; else break; }
             for (int j = 4; j >= 0; j--) { if (mods[j] == ' ' || mods[j] == 0) mods[j] = 0; else break; }
             for (int j = 15; j >= 0; j--) { if (brand[j] == ' ' || brand[j] == 0) brand[j] = 0; else break; }
@@ -284,7 +309,7 @@ bool TagParser::parseRawNTAG(uint8_t* data, uint16_t length, const char* uid, Sp
             info.totalGrams = info.remainingGrams = wg;
             info.nozzleTempMin = pt; info.nozzleTempMax = pt + 10;
             if (brand[0]) strncpy(info.manufacturer, brand, sizeof(info.manufacturer) - 1);
-            strncpy(info.detailedType, "OpenTag3D", sizeof(info.detailedType) - 1);
+
             info.tagReadSuccess = true;
             return true;
           }
