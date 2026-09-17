@@ -116,15 +116,30 @@ Multi-spool NFC tag reader for Bambu Lab printers. Reads 4 Bambu Lab filament sp
 
 ### Building
 
-1. Install **ESP32 board package** (≥ 3.x):  
-   File → Preferences → Additional Board Manager URLs:  
-   `https://espressif.github.io/arduino-esp32/package_esp32_index.json`
-2. Install libraries listed above via **Tools → Manage Libraries**.
-3. Open `BambuTagger-AMS-C.ino`, select **ESP32 Dev Module**, and upload.
+#### Setup
+
+Set up a virtual environment with Python 3.13 and install `platformio` and `esptool`:
+
+```sh
+python3.13 -m venv .venv
+pip install platformio esptool
+```
+
+To reactivate the virtualenv at a later time, simply run:
+
+```sh
+source .venv/bin/activate
+```
+
+#### Build and Upload
+
+To build, run `pio run build`. To upload to the board, run `pio run -t upload`.
 
 ---
 
-## WiFi & AP Mode
+## WiFi & Connectivity
+
+### AP Mode
 
 | Scenario | Behavior |
 |----------|----------|
@@ -139,11 +154,15 @@ Multi-spool NFC tag reader for Bambu Lab printers. Reads 4 Bambu Lab filament sp
 - **IP**: `192.168.4.1`
 - **Captive portal**: DNS redirects all domains to the config page
 
+### SSID Mode
+
+When the ESP32 module is connected to an existing network, the IP address will display on the TFT screen. Alternatively, you may navigate to `[Device Name].local` (default: `BambuTagger-AMS.local`).
+
 ---
 
 ## Web Interface
 
-Open a browser to the ESP32's IP (shown on TFT), or `http://192.168.4.1` in AP mode.
+Open a browser to the ESP32's IP (shown on TFT), `[Device Name].local`, or `http://192.168.4.1` (in AP mode).
 
 | Tab | Description |
 |-----|-------------|
@@ -217,9 +236,9 @@ OTA progress shown on TFT with header/footer preserved:
 |----------|--------|---------|
 | **Bambu Lab** | MIFARE Classic 1K | `Bambu - PLA · C12E1FFF · 1000g/1000g` |
 | **SpoolEase** | NTAG, NDEF URI | `SpoolEase - PLA · 000000FF · 1000g/1036g` |
-| **TigerTag** | NTAG, binary v2.1 | `TigerTag - ASA-AF · F078B4FF · 1000g/1000g` |
+| **TigerTag** | raw binary v2.1 | `TigerTag - ASA-AF · F078B4FF · 1000g/1000g` |
 | **OpenSpool** | NTAG, NDEF JSON | `OpenSpool - ASA-AF · F078B4FF · 1000g/1000g` |
-| **OpenTag3D** | NTAG, MIME binary | `OpenTag3D - ASA-AF · F078B4FF · 1000g/1000g` |
+| **OpenTag3D** (v1 and v2) | NTAG, MIME binary | `OpenTag3D v2.003 - ASA-AF · F078B4FF · 1000g/1000g` |
 
 ### Bambu Lab (MIFARE Classic 1K)
 
@@ -248,7 +267,7 @@ URL format: `https://tag.spoolease.io/S1/?TG=...&M=PLA&CC=000000FF&SC=GFL99&WL=1
 | `NN=` | `nozzleTempMin` | Min nozzle temp °C |
 | `NX=` | `nozzleTempMax` | Max nozzle temp °C |
 
-### TigerTag (NTAG, binary v2.1)
+### TigerTag (raw binary v2.1)
 
 | Offset | Size | Field |
 |--------|------|-------|
@@ -263,6 +282,10 @@ URL format: `https://tag.spoolease.io/S1/?TG=...&M=PLA&CC=000000FF&SC=GFL99&WL=1
 | +76 | 3 | Measure Available |
 
 Known material IDs: PLA=38219, PETG=38256, ABS=20562, etc.
+
+### OpenTag3D (NTAG, MIME binary)
+
+The OpenTag3D spec can be read on [their website](https://opentag3d.info/spec).
 
 ### Authentication & Reading
 
